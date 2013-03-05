@@ -22,13 +22,15 @@ public class Main
 	{
 		if (!((args.length == 5) || (args.length == 8)))
 		{
+			System.out.println("AWS upload speed - By Takipi");
 			System.out.println("Usage: CREATE AWS_KEY AWS_SECRET PREFIX SUFFIX");
 			System.out.println("Usage: RUN AWS_KEY AWS_SECRET PREFIX SUFFIX ROUNDS SMALL|MEDIUM|BIG|HUGE SDK|PLAIN");
+			System.out.println("PREFIX can be something like aws-speed-test-");
+			System.out.println("SUFFIX can be something like -xx-xx-xxxx");
 			return;
 		}
 		
 		CredentialsManager.setup(args[1], args[2]);
-		
 		S3Manager.initBuckets(args[3], args[4]);
 		
 		if (args.length == 5)
