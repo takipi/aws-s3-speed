@@ -58,10 +58,10 @@ public class SpeedTest
 				switch (uploadType)
 				{
 					case PLAIN:
-						uploadTask = new UploadWithPlainJavaTask(buckets.get(region), data);
+                                            uploadTask = new UploadWithPlainJavaTask(region, buckets.get(region), data);
 						break;
 					case SDK:
-						uploadTask = new UploadWithAwsSdkTask(buckets.get(region), data);
+                                            uploadTask = new UploadWithAwsSdkTask(region,buckets.get(region), data);
 						break;
 					default:
 						throw new IllegalStateException("Bad upload type");

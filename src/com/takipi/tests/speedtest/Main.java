@@ -16,70 +16,83 @@ import com.takipi.tests.speedtest.task.UploadTaskType;
 
 public class Main
 {
-	private static final Logger logger = LoggerFactory.getLogger(Main.class);
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 	
-	public static void main(String[] args) throws Exception
-	{
-		if (!((args.length == 5) || (args.length == 8)))
-		{
-			System.out.println("AWS upload speed - By Takipi");
-			System.out.println("Usage: CREATE AWS_KEY AWS_SECRET PREFIX SUFFIX");
-			System.out.println("Usage: RUN AWS_KEY AWS_SECRET PREFIX SUFFIX ROUNDS SMALL|MEDIUM|BIG|HUGE SDK|PLAIN");
-			System.out.println("PREFIX can be something like aws-speed-test-");
-			System.out.println("SUFFIX can be something like -xx-xx-xxxx");
-			return;
-		}
+    public static void main(String[] args) throws Exception
+    {
+        if (!((args.length == 5) || (args.length == 8)))
+            {
+                System.out.println("AWS upload speed - By Takipi");
+                System.out.println("Usage: CREATE AWS_KEY AWS_SECRET PREFIX SUFFIX");
+                System.out.println("Usage: RUN AWS_KEY AWS_SECRET PREFIX SUFFIX ROUNDS SMALL|MEDIUM|BIG|HUGE SDK|PLAIN");
+                System.out.println("PREFIX can be something like aws-speed-test-");
+                System.out.println("SUFFIX can be something like -xx-xx-xxxx");
+                return;
+            }
 		
-		CredentialsManager.setup(args[1], args[2]);
-		S3Manager.initBuckets(args[3], args[4]);
+        CredentialsManager.setup(args[1], args[2]);
+        S3Manager.initBuckets(args[3], args[4]);
 		
-		if (args.length == 5)
-		{
-			S3Manager.initBuckets(true);
-			return;
-		}
+        if (args.length == 5)
+            {
+                S3Manager.initBuckets(true);
+                return;
+            }
 		
-		int rounds = Integer.parseInt(args[5]);
-		byte[] data = DataBytes.getData(Size.valueOf(args[6]));
+        int rounds = Integer.parseInt(args[5]);
+        byte[] data = DataBytes.getData(Size.valueOf(args[6]));
 		
-		UploadTaskType uploadType = UploadTaskType.valueOf(args[7]);
+        UploadTaskType uploadType = UploadTaskType.valueOf(args[7]);
 		
-		logger.debug("Starting test");
+        logger.debug("Starting test");
 		
-		SpeedTest speedTest = new SpeedTest(rounds, data, uploadType);
-		speedTest.start();
+        SpeedTest speedTest = new SpeedTest(rounds, data, uploadType);
+        speedTest.start();
 		
-		logger.debug("Test finished");
+        logger.debug("Test finished");
 		
-		printResults(speedTest.getTimings());
-	}
+        printResults(speedTest.getTimings());
+    }
 	
-	private static void printResults(Map<Region, List<Long>> timings)
-	{
-		for (Region region : Region.values())
-		{
-			long sum = 0;
+    private static void printResults(Map<Region, List<Long>> timings)
+    {
+        String regionName = "";
+        
+        for (Region region : Region.values())
+            {
+                if (region.toString() != null) {
+                    regionName = region.toString();
+                } else {
+                    regionName = "us-east-1";
+                }
+                logger.debug("RegionName: '{}'", regionName);
+                if (regionName.equals("s3-us-gov-west-1") || regionName.equals("cn-north-1")) {
+                    logger.debug("Skipping: Not authorized for region {}", regionName);
+                    continue;
+                }
+
+                long sum = 0;
 			
-			List<Long> regionTimings = timings.get(region);
+                List<Long> regionTimings = timings.get(region);
 			
-			if (regionTimings.size() > 2)
-			{
-				Collections.sort(regionTimings);
-				regionTimings.remove(0);
-				regionTimings.remove(regionTimings.size() - 1);
-			}
+                if (regionTimings.size() > 2)
+                    {
+                        Collections.sort(regionTimings);
+                        regionTimings.remove(0);
+                        regionTimings.remove(regionTimings.size() - 1);
+                    }
 			
-			int timingsCount = regionTimings.size();
+                int timingsCount = regionTimings.size();
 			
-			for (Long time : timings.get(region))
-			{
-				sum += time.longValue();
-			}
+                for (Long time : timings.get(region))
+                    {
+                        sum += time.longValue();
+                    }
 			
-			double avg = sum / (double)timingsCount;
+                double avg = sum / (double)timingsCount;
 			
-			logger.info("Region {}: {} valid uploads. lowest: {} ms, highest: {} ms. Average: {} ms.", region, timingsCount,
-					regionTimings.get(0), regionTimings.get(timingsCount - 1), avg);
-		}
-	}
+                logger.info("Region {}: {} valid uploads. lowest: {} ms, highest: {} ms. Average: {} ms.", region, timingsCount,
+                            regionTimings.get(0), regionTimings.get(timingsCount - 1), avg);
+            }
+    }
 }

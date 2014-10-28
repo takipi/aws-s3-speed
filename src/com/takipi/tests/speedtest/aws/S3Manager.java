@@ -15,92 +15,140 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.Region;
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.regions.RegionUtils;
 
 public class S3Manager
 {
-	private static String BUCKET_PREFIX;// = "takipi-aws-speed-test-";
-	private static String BUCKET_SUFFIX;// = "-05-mar-2013";
+    private static String BUCKET_PREFIX;// = "takipi-aws-speed-test-";
+    private static String BUCKET_SUFFIX;// = "-05-mar-2013";
 	
-	private static final Logger logger = LoggerFactory.getLogger(S3Manager.class);
+    private static final Logger logger = LoggerFactory.getLogger(S3Manager.class);
 
-	private static final AmazonS3 s3client;
+    private static final AmazonS3 s3client;
 
-	public static final Map<Region, String> buckets; 
+    public static final Map<Region, String> buckets; 
 	
-	static
-	{
-		s3client = new AmazonS3Client(CredentialsManager.getCreds());
-		buckets = new HashMap<Region, String>();
-	}
+    static
+    {
+        s3client = new AmazonS3Client(CredentialsManager.getCreds());
+        buckets = new HashMap<Region, String>();
+    }
 	
-	public static void initBuckets(String prefix, String suffix)
-	{
-		BUCKET_PREFIX = prefix;
-		BUCKET_SUFFIX = suffix;
-	}
+    public static void initBuckets(String prefix, String suffix)
+    {
+        BUCKET_PREFIX = prefix;
+        BUCKET_SUFFIX = suffix;
+    }
 	
-	public static Map<Region, String> getBuckets()
-	{
-		return buckets;
-	}
+    public static Map<Region, String> getBuckets()
+    {
+        return buckets;
+    }
 	
-	public static void initBuckets(boolean create)
-	{
-		for (Region region : Region.values())
-		{
-			StringBuilder bucketNameBuilder = new StringBuilder();
-			bucketNameBuilder.append(BUCKET_PREFIX);
-			bucketNameBuilder.append(region.toString());
-			bucketNameBuilder.append(BUCKET_SUFFIX);
+    public static void initBuckets(boolean create)
+    {
+        String regionName = "";
+        for (Region region : Region.values())
+            {
+                logger.debug("Region: '{}'", region);
+
+                if (region.toString() != null) {
+                    regionName = region.toString();
+                } else {
+                    regionName = "us-east-1";
+                }
+                logger.debug("RegionName: '{}'", regionName);
+                    
+                // need to skip this region because we're not authorized
+                if (regionName.equals("s3-us-gov-west-1") || regionName.equals("cn-north-1")) {
+                    logger.debug("Skipping: Not authorized for region {}", regionName);
+                    continue;
+                }
+                    
+                StringBuilder bucketNameBuilder = new StringBuilder();
+                bucketNameBuilder.append(BUCKET_PREFIX);
+                bucketNameBuilder.append(regionName);
+                bucketNameBuilder.append(BUCKET_SUFFIX);
 			
-			String bucketName = bucketNameBuilder.toString().toLowerCase();
+                String bucketName = bucketNameBuilder.toString().toLowerCase();
+                    
+                buckets.put(region, bucketName);
 			
-			buckets.put(region, bucketName);
-			
-			if (create)
-			{
-				s3client.createBucket(bucketName, region);
-				logger.debug("Creating bucket {} in region {}", bucketName, region);
-			}
-		}
-	}
+                if (create)
+                    {
+                        try {
+                            
+                            // need to set the region for "eu-central-1" region to work
+                            s3client.setRegion(RegionUtils.getRegion(regionName)); 
+                            if (! s3client.doesBucketExist(bucketName)) {
+                                s3client.createBucket(bucketName, region);
+                                logger.debug("Creating bucket {} in region {}", bucketName, region);
+                            } else
+                                logger.debug("Skipping: Bucket {} in region {} already exists.", bucketName, region);
+                            
+                        } catch (AmazonServiceException ase) {
+                            logger.debug("Caught an AmazonServiceException, which " +
+                                         "means your request made it " +
+                                         "to Amazon S3, but was rejected with an error response" +
+                                         " for some reason.");
+                            logger.debug("Error Message:    " + ase.getMessage());
+                            logger.debug("HTTP Status Code: " + ase.getStatusCode());
+                            logger.debug("AWS Error Code:   " + ase.getErrorCode());
+                            logger.debug("Error Type:       " + ase.getErrorType());
+                            logger.debug("Request ID:       " + ase.getRequestId());
+                        } catch (AmazonClientException ace) {
+                            logger.debug("Caught an AmazonClientException, which " +
+                                         "means the client encountered " +
+                                         "an internal error while trying to " +
+                                         "communicate with S3, " +
+                                         "such as not being able to access the network.");
+                            logger.debug("Error Message: " + ace.getMessage());
+                        }
+                    }
+
+            }
+    }
 	
-	public static void removeBuckets()
-	{
-		for (String bucketName : buckets.values())
-		{
-			s3client.deleteBucket(bucketName);
+    public static void removeBuckets()
+    {
+        for (String bucketName : buckets.values())
+            {
+                s3client.deleteBucket(bucketName);
 			
-			logger.debug("Deleting bucket {}", bucketName);
-		}
-	}
+                logger.debug("Deleting bucket {}", bucketName);
+            }
+    }
 	
-	public static URL getSignedUrl(String bucket, String key)
-	{
-		GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, key, HttpMethod.PUT);
+    public static URL getSignedUrl(String bucket, String key)
+    {
+        GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, key, HttpMethod.PUT);
 		
-		return s3client.generatePresignedUrl(request);
-	}
+        return s3client.generatePresignedUrl(request);
+    }
 	
-	public static boolean putBytes(String bucket, String key, byte[] bytes)
-	{
-		ObjectMetadata metaData = new ObjectMetadata();
-		metaData.setContentLength(bytes.length);
+    public static boolean putBytes(Region region, String bucket, String key, byte[] bytes)
+    {
+        ObjectMetadata metaData = new ObjectMetadata();
+        metaData.setContentLength(bytes.length);
 		
-		return doPutObject(bucket, key, new ByteArrayInputStream(bytes), metaData);
-	}
+        return doPutObject(region, bucket, key, new ByteArrayInputStream(bytes), metaData);
+    }
 
-	private static boolean doPutObject(String bucket, String key, InputStream is, ObjectMetadata metaData)
-	{
-		try
-		{
-			s3client.putObject(bucket, key, is, metaData);
-			return true;
-		}
-		catch (Exception e)
-		{
-			logger.error("Error putting object", e);
-			return false;
-		}
-	}
+    private static boolean doPutObject(Region region, String bucket, String key, InputStream is, ObjectMetadata metaData)
+    {
+        try
+            {
+                // need to set the region for "eu-central-1" region to work
+                s3client.setRegion(RegionUtils.getRegion(region.toString())); 
+                s3client.putObject(bucket, key, is, metaData);
+                return true;
+            }
+        catch (Exception e)
+            {
+                logger.error("Error putting object", e);
+                return false;
+            }
+    }
 }
