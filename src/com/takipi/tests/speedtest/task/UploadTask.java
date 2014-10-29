@@ -1,7 +1,10 @@
 package com.takipi.tests.speedtest.task;
 
+import com.amazonaws.services.s3.model.Region;
+
 public abstract class UploadTask implements Runnable
 {
+        protected final Region region;
 	protected final String bucket;
 	protected final byte[] data;
 	
@@ -10,7 +13,7 @@ public abstract class UploadTask implements Runnable
 	public static class UploadTaskResult
 	{
 		private final boolean 	success;
-		private final long 		time;
+		private final long 	time;
 		
 		public UploadTaskResult(boolean success, long time)
 		{
@@ -29,10 +32,11 @@ public abstract class UploadTask implements Runnable
 		}
 	}
 	
-	public UploadTask(String bucket, byte[] data)
+    public UploadTask(Region region, String bucket, byte[] data)
 	{
-		this.bucket = bucket;
-		this.data 	= data;
+            this.region = region;
+            this.bucket = bucket;
+            this.data 	= data;
 	}
 	
 	

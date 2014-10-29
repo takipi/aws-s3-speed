@@ -14,14 +14,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.takipi.tests.speedtest.aws.S3Manager;
+import com.amazonaws.services.s3.model.Region;
 
 public class UploadWithPlainJavaTask extends UploadTask
 {
 	private static final Logger logger = LoggerFactory.getLogger(UploadWithPlainJavaTask.class);
 	
-	public UploadWithPlainJavaTask(String bucket, byte[] data)
+    public UploadWithPlainJavaTask(Region region, String bucket, byte[] data)
 	{
-		super(bucket, data);
+            super(region, bucket, data);
 	}
 	
 	@Override

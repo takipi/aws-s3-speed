@@ -6,14 +6,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.takipi.tests.speedtest.aws.S3Manager;
+import com.amazonaws.services.s3.model.Region;
 
 public class UploadWithAwsSdkTask extends UploadTask
 {
 	private static final Logger logger = LoggerFactory.getLogger(UploadWithAwsSdkTask.class);
 	
-	public UploadWithAwsSdkTask(String bucket, byte[] data)
+    public UploadWithAwsSdkTask(Region region, String bucket, byte[] data)
 	{
-		super(bucket, data);
+            super(region, bucket, data);
 	}
 	
 	@Override
@@ -23,7 +24,7 @@ public class UploadWithAwsSdkTask extends UploadTask
 		
 		long start = System.currentTimeMillis();
 		
-		boolean success = S3Manager.putBytes(bucket, key, data);
+		boolean success = S3Manager.putBytes(region, bucket, key, data);
 		
 		long finish = System.currentTimeMillis();
 		
