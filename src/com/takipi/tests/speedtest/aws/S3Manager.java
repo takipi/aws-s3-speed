@@ -78,9 +78,11 @@ public class S3Manager
 			
                 if (create)
                     {
-                        try {
-                            
+                        try {                            
                             // need to set the region for "eu-central-1" region to work
+                            // this enables V4 signing
+                            // careful, this is not thread-safe!
+                            logger.debug("Setregion: {}", regionName);
                             s3client.setRegion(RegionUtils.getRegion(regionName)); 
                             if (! s3client.doesBucketExist(bucketName)) {
                                 s3client.createBucket(bucketName, region);
@@ -140,7 +142,6 @@ public class S3Manager
     {
         try
             {
-                // need to set the region for "eu-central-1" region to work
                 String regionName = "";
                 if (region.toString() != null) {
                     regionName = region.toString();
@@ -148,6 +149,9 @@ public class S3Manager
                     regionName = "us-east-1";
                 }
                 logger.debug("Setregion: {}", regionName);
+                // need to set the region for "eu-central-1" region to work
+                // this enables V4 signing
+                // careful, this is not thread-safe!
                 s3client.setRegion(RegionUtils.getRegion(regionName));
                 logger.debug("PUT object to S3 bucket: {}", bucket);
                 s3client.putObject(bucket, key, is, metaData);
