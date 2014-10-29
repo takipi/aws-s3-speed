@@ -141,7 +141,15 @@ public class S3Manager
         try
             {
                 // need to set the region for "eu-central-1" region to work
-                s3client.setRegion(RegionUtils.getRegion(region.toString())); 
+                String regionName = "";
+                if (region.toString() != null) {
+                    regionName = region.toString();
+                } else {
+                    regionName = "us-east-1";
+                }
+                logger.debug("Setregion: {}", regionName);
+                s3client.setRegion(RegionUtils.getRegion(regionName));
+                logger.debug("PUT object to S3 bucket: {}", bucket);
                 s3client.putObject(bucket, key, is, metaData);
                 return true;
             }
