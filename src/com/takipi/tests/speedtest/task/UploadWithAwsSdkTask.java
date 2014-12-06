@@ -46,6 +46,8 @@ public class UploadWithAwsSdkTask extends UploadTask
 		
 		logger.debug("Download task to {} finished in {} ms", bucket, downloadTime);
 
+		result = new UploadTaskResult(success && returnData != null && Arrays.equals(data, returnData), uploadTime, downloadTime);
+
 		S3Manager.deleteBytes(region, bucket, key);
 
 		logger.debug("Delete task to {} finished", bucket);
