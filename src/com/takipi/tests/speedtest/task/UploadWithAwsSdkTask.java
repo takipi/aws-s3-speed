@@ -1,5 +1,6 @@
 package com.takipi.tests.speedtest.task;
 
+import java.util.Arrays;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -28,10 +29,25 @@ public class UploadWithAwsSdkTask extends UploadTask
 		
 		long finish = System.currentTimeMillis();
 		
-		long time = finish - start;
+		long uploadTime = finish - start;
+
+		if (!success) {
+			result = new UploadTaskResult(success, uploadTime, 0);
+			return;
+		}
+
+		start = System.currentTimeMillis();
+
+		byte[] returnData = S3Manager.getBytes(region, bucket, key);
+
+		finish = System.currentTimeMillis();
+
+		long downloadTime = finish - start;
 		
-		logger.debug("Upload task to {} finished in {} ms", bucket, time);
-		
-		result = new UploadTaskResult(success, time);
+		logger.debug("Download task to {} finished in {} ms", bucket, downloadTime);
+
+		S3Manager.deleteBytes(region, bucket, key);
+
+		logger.debug("Delete task to {} finished", bucket);
 	}
 }

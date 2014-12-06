@@ -25,7 +25,8 @@ public class SpeedTest
 	private final byte[] data;
 	private final UploadTaskType uploadType;
 	
-	private final Map<Region, List<Long>> timings;
+	private final Map<Region, List<Long>> uploadTimings;
+	private final Map<Region, List<Long>> downloadTimings;
 	
 	public SpeedTest(int rounds, byte[] data, UploadTaskType uploadType)
 	{
@@ -33,7 +34,8 @@ public class SpeedTest
 		this.data = data;
 		this.uploadType = uploadType;
 		
-		this.timings = new HashMap<Region, List<Long>>();
+		this.uploadTimings = new HashMap<Region, List<Long>>();
+		this.downloadTimings = new HashMap<Region, List<Long>>();
 	}
 	
 	public void start()
@@ -73,15 +75,21 @@ public class SpeedTest
 				
 				if ((result != null) && (result.isSuccess()))
 				{
-					timings.get(region).add(Long.valueOf(result.getTime()));
+					uploadTimings.get(region).add(Long.valueOf(result.getUploadTime()));
+					downloadTimings.get(region).add(Long.valueOf(result.getDownloadTime()));
 				}
 			}
 		}
 	}
-	
-	public Map<Region, List<Long>> getTimings()
+
+	public Map<Region, List<Long>> getUploadTimings()
 	{
-		return timings;
+		return uploadTimings;
+	}
+
+	public Map<Region, List<Long>> getDownloadTimings()
+	{
+		return downloadTimings;
 	}
 	
 	private void init()
@@ -89,7 +97,8 @@ public class SpeedTest
 		for (Region region : Region.values())
 		{
 			List<Long> list = new ArrayList<Long>();
-			this.timings.put(region, list);
+			this.uploadTimings.put(region, list);
+			this.downloadTimings.put(region, list);
 		}
 		
 		S3Manager.initBuckets(false);

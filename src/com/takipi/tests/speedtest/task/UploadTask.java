@@ -13,12 +13,14 @@ public abstract class UploadTask implements Runnable
 	public static class UploadTaskResult
 	{
 		private final boolean 	success;
-		private final long 	time;
+		private final long 	uploadTime;
+		private final long 	downloadTime;
 		
-		public UploadTaskResult(boolean success, long time)
+		public UploadTaskResult(boolean success, long uploadTime, long downloadTime)
 		{
 			this.success = success;
-			this.time = time;
+			this.uploadTime = uploadTime;
+			this.downloadTime = downloadTime;
 		}
 		
 		public boolean isSuccess()
@@ -26,9 +28,14 @@ public abstract class UploadTask implements Runnable
 			return success;
 		}
 
-		public long getTime()
+		public long getUploadTime()
 		{
-			return time;
+			return uploadTime;
+		}
+
+		public long getDownloadTime()
+		{
+			return downloadTime;
 		}
 	}
 	
