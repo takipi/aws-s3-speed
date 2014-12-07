@@ -5,6 +5,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.amazonaws.services.s3.model.S3Object;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -190,9 +191,8 @@ public class S3Manager
             // careful, this is not thread-safe!
             s3client.setRegion(RegionUtils.getRegion(regionName));
             logger.debug("GET object from S3 bucket: {}", bucket);
-            s3client.getObject(bucket, key).getObjectContent();
-            InputStream reader = new BufferedInputStream(
-                    s3client.getObject(bucket, key).getObjectContent());
+            S3Object object = s3client.getObject(bucket, key);
+            InputStream reader = new BufferedInputStream(object.getObjectContent());
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             OutputStream writer = new BufferedOutputStream(bytes);
             int read = -1;
@@ -202,6 +202,7 @@ public class S3Manager
             writer.flush();
             writer.close();
             reader.close();
+            object.close();
             return bytes.toByteArray();
         }
         catch (Exception e)
