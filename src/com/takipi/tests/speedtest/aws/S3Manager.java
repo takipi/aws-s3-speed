@@ -1,11 +1,11 @@
 package com.takipi.tests.speedtest.aws;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.amazonaws.services.s3.model.S3Object;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,19 +123,30 @@ public class S3Manager
             }
     }
 	
-    public static URL getSignedUrl(String bucket, String key)
+    public static URL getSignedUrl(String bucket, String key, HttpMethod method)
     {
-        GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, key, HttpMethod.PUT);
+        GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, key, method);
 		
         return s3client.generatePresignedUrl(request);
+
     }
-	
+
     public static boolean putBytes(Region region, String bucket, String key, byte[] bytes)
     {
         ObjectMetadata metaData = new ObjectMetadata();
         metaData.setContentLength(bytes.length);
-		
+
         return doPutObject(region, bucket, key, new ByteArrayInputStream(bytes), metaData);
+    }
+
+    public static byte[] getBytes(Region region, String bucket, String key)
+    {
+        return doGetObject(region, bucket, key);
+    }
+
+    public static void deleteBytes(Region region, String bucket, String key)
+    {
+        doDeleteObject(region, bucket, key);
     }
 
     private static boolean doPutObject(Region region, String bucket, String key, InputStream is, ObjectMetadata metaData)
@@ -162,5 +173,67 @@ public class S3Manager
                 logger.error("Error putting object", e);
                 return false;
             }
+    }
+
+    private static byte[] doGetObject(Region region, String bucket, String key)
+    {
+        try
+        {
+            String regionName = "";
+            if (region.toString() != null) {
+                regionName = region.toString();
+            } else {
+                regionName = "us-east-1";
+            }
+            logger.debug("Setregion: {}", regionName);
+            // need to set the region for "eu-central-1" region to work
+            // this enables V4 signing
+            // careful, this is not thread-safe!
+            s3client.setRegion(RegionUtils.getRegion(regionName));
+            logger.debug("GET object from S3 bucket: {}", bucket);
+            S3Object object = s3client.getObject(bucket, key);
+            InputStream reader = new BufferedInputStream(object.getObjectContent());
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            OutputStream writer = new BufferedOutputStream(bytes);
+            int read = -1;
+            while ( ( read = reader.read() ) != -1 ) {
+                writer.write(read);
+            }
+            writer.flush();
+            writer.close();
+            reader.close();
+            object.close();
+            return bytes.toByteArray();
+        }
+        catch (Exception e)
+        {
+            logger.error("Error getting object", e);
+            return null;
+        }
+    }
+
+    private static void doDeleteObject(Region region, String bucket, String key)
+    {
+        try
+        {
+            String regionName = "";
+            if (region.toString() != null) {
+                regionName = region.toString();
+            } else {
+                regionName = "us-east-1";
+            }
+            logger.debug("Setregion: {}", regionName);
+            // need to set the region for "eu-central-1" region to work
+            // this enables V4 signing
+            // careful, this is not thread-safe!
+            s3client.setRegion(RegionUtils.getRegion(regionName));
+            logger.debug("DELETE object from S3 bucket: {}", bucket);
+            s3client.deleteObject(bucket, key);
+        }
+        catch (Exception e)
+        {
+            logger.error("Error deleting object", e);
+            return;
+        }
     }
 }

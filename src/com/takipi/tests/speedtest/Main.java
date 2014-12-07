@@ -24,6 +24,7 @@ public class Main
             {
                 System.out.println("AWS upload speed - By Takipi");
                 System.out.println("Usage: CREATE AWS_KEY AWS_SECRET PREFIX SUFFIX");
+                System.out.println("Usage: DELETE AWS_KEY AWS_SECRET PREFIX SUFFIX");
                 System.out.println("Usage: RUN AWS_KEY AWS_SECRET PREFIX SUFFIX ROUNDS SMALL|MEDIUM|BIG|HUGE SDK|PLAIN");
                 System.out.println("PREFIX can be something like aws-speed-test-");
                 System.out.println("SUFFIX can be something like -xx-xx-xxxx");
@@ -33,9 +34,15 @@ public class Main
         CredentialsManager.setup(args[1], args[2]);
         S3Manager.initBuckets(args[3], args[4]);
 		
-        if (args.length == 5)
+        if (args[0].equals("CREATE"))
             {
                 S3Manager.initBuckets(true);
+                return;
+            }
+        else if (args[0].equals("DELETE"))
+            {
+                S3Manager.initBuckets(false);
+                S3Manager.removeBuckets();
                 return;
             }
 		
@@ -50,8 +57,11 @@ public class Main
         speedTest.start();
 		
         logger.debug("Test finished");
-		
-        printResults(speedTest.getTimings());
+
+        logger.debug("Upload results");
+        printResults(speedTest.getUploadTimings());
+        logger.debug("Download results");
+        printResults(speedTest.getDownloadTimings());
     }
 	
     private static void printResults(Map<Region, List<Long>> timings)
@@ -74,10 +84,19 @@ public class Main
                 long sum = 0;
 			
                 List<Long> regionTimings = timings.get(region);
+
+                if (regionTimings.size() == 0) {
+                    logger.debug("Skipping: No results for region {}", regionName);
+                    continue;
+                }
 			
-                if (regionTimings.size() > 2)
+                if (regionTimings.size() > 1)
                     {
                         Collections.sort(regionTimings);
+                    }
+
+                if (regionTimings.size() > 2)
+                    {
                         regionTimings.remove(0);
                         regionTimings.remove(regionTimings.size() - 1);
                     }
@@ -90,9 +109,25 @@ public class Main
                     }
 			
                 double avg = sum / (double)timingsCount;
-			
-                logger.info("Region {}: {} valid uploads. lowest: {} ms, highest: {} ms. Average: {} ms.", region, timingsCount,
-                            regionTimings.get(0), regionTimings.get(timingsCount - 1), avg);
+                double median;
+                    {
+                        int middle = timingsCount / 2;
+                        if (timingsCount == 1)
+                            {
+                                median = regionTimings.get(0);
+                            }
+                        else if (timingsCount % 2 == 1)
+                            {
+                                median = regionTimings.get(middle);
+                            }
+                        else
+                        {
+                            median = (regionTimings.get(middle - 1) + regionTimings.get(middle)) / 2.0;
+                        }
+                    }
+
+                logger.info("Region {}: {} valid tasks. lowest: {} ms, highest: {} ms. Average: {} ms, median: {} ms.", region, timingsCount,
+                            regionTimings.get(0), regionTimings.get(timingsCount - 1), avg, median);
             }
     }
 }
