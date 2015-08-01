@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.takipi.tests</groupId>
 	<artifactId>aws-s3-speed</artifactId>
-	<version>0.0.5-SNAPSHOT</version>
+	<version>0.0.6</version>
 	<name>AWS S3 Speed test</name>
 	<description>An AWS S3 speed test that we carry on different regions</description>
 	<build>
@@ -37,7 +37,7 @@
 		<dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk</artifactId>
-			<version>1.9.3</version>
+			<version>1.10.8</version>
 		</dependency>
 
 		<dependency>
