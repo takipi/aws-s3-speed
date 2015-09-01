@@ -5,6 +5,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.s3.model.S3Object;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,10 @@ public class S3Manager
 	
     static
     {
-        s3client = new AmazonS3Client(CredentialsManager.getCreds());
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.setConnectionTimeout(0);
+        clientConfiguration.setSocketTimeout(0);
+        s3client = new AmazonS3Client(CredentialsManager.getCreds(), clientConfiguration);
         buckets = new HashMap<Region, String>();
     }
 	
@@ -166,6 +170,7 @@ public class S3Manager
                 s3client.setRegion(RegionUtils.getRegion(regionName));
                 logger.debug("PUT object to S3 bucket: {}", bucket);
                 s3client.putObject(bucket, key, is, metaData);
+                is.close();
                 return true;
             }
         catch (Exception e)
@@ -203,7 +208,9 @@ public class S3Manager
             writer.close();
             reader.close();
             object.close();
-            return bytes.toByteArray();
+            byte[] data = bytes.toByteArray();
+            bytes.close();
+            return data;
         }
         catch (Exception e)
         {

@@ -96,9 +96,8 @@ public class SpeedTest
 	{
 		for (Region region : Region.values())
 		{
-			List<Long> list = new ArrayList<Long>();
-			this.uploadTimings.put(region, list);
-			this.downloadTimings.put(region, list);
+			this.uploadTimings.put(region, new ArrayList<Long>());
+			this.downloadTimings.put(region, new ArrayList<Long>());
 		}
 		
 		S3Manager.initBuckets(false);
